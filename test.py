@@ -2,7 +2,6 @@ import argparse
 import logging
 import os
 import sys
-
 import cv2
 import natsort
 import numpy as np
