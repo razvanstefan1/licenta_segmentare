@@ -49,31 +49,17 @@ def parse_options():
     return opt
 
 
-def cal_miou(img1, img2):
-    classnum = img2.max()
-    iou = np.zeros((int(classnum), 1))
+def calculate_miou(predicted_img, GT_img):
+    classnum = GT_img.max() #gaseste maximul care indica numarul de clase (gen artery vein etc)
+    iou = np.zeros((int(classnum), 1)) #array pt a stoca iou values pt fiecare clasa
     for i in range(int(classnum)):
-        imga = img1 == i + 1
-        imgb = img2 == i + 1
+        imga = predicted_img == i + 1
+        imgb = GT_img == i + 1
         imgi = imga * imgb
         imgu = imga + imgb
         iou[i] = np.sum(imgi) / np.sum(imgu)
     miou = np.mean(iou)
     return miou
-
-
-def make_one_hot(input, shape):
-    """Convert class index tensor to one hot encoding tensor.
-    Args:
-         input: A tensor of shape [N, 1, *]
-         num_classes: An int of number of class
-    Returns:
-        A tensor of shape [N, num_classes, *]
-    """
-    result = torch.zeros(shape)
-    result.scatter_(1, input.cpu(), 1)
-    return result
-
 
 class BinaryDiceLoss(nn.Module):
     """Dice loss of binary class
@@ -137,7 +123,11 @@ class DiceLoss(nn.Module):
     def forward(self, predict, target):
         shape = predict.shape
         target = torch.unsqueeze(target, 1)
-        target = make_one_hot(target.long(), shape)
+        #implementarea la make one hot
+        res = torch.zeros(shape)
+        res.scatter_(1, target.long().cpu(), 1)
+        target = res
+        #
         assert predict.shape == target.shape, 'predict & target shape do not match'
         dice = BinaryDiceLoss(**self.kwargs)
         total_loss = 0
@@ -205,7 +195,7 @@ def train_net(net, device, opt):
                 pred = net(test_images)
                 pred_argmax = torch.argmax(pred, dim=1)
                 result = np.squeeze(pred_argmax).cpu().detach().numpy()
-                val_miou_sum += cal_miou(result, test_annotations)
+                val_miou_sum += calculate_miou(result, test_annotations)
             val_miou = val_miou_sum / val_num
             print("Step:{}, Valid_mIoU:{}".format(epoch, val_miou))
             # save best model
