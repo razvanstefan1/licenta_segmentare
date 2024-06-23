@@ -5,11 +5,6 @@ import logging
 import sys
 import os
 from models.unet import UNet
-from models.unetpp import UNetpp
-from models.unetppp import UNetppp
-from models.attentionunet import AttUNet
-from models.avnet import AVNet
-from models.csnet import CSNet
 import shutil
 import natsort
 import BatchDataReader
@@ -209,14 +204,12 @@ if __name__ == '__main__':
     os.environ['CUDA_VISIBLE_DEVICES'] = GPU_IDS #controleaza ce GPUs sunt vizibile pentru script
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') #vede daca cpu sau gpu
     logging.info(f'Using device {device}')
+
     # loading network
     net = UNet(in_channels=IN_CHANNELS, n_classes=N_CLASSES, channels=CHANNELS) #initializeaza o instanta a unet-ului cu param specificati
-    # net = AVNet(in_channels=opt.in_channels, n_classes=opt.n_classes, channels=opt.channels)
-    # net = UNetpp(in_channels=opt.in_channels, n_classes=opt.n_classes, channels=opt.channels)
-    # net = UNetppp(in_channels=opt.in_channels, n_classes=opt.n_classes, channels=opt.channels)
-    # net = AttUNet(in_channels=opt.in_channels, n_classes=opt.n_classes, channels=opt.channels)
-    # net = CSNet(in_channels=opt.in_channels, n_classes=opt.n_classes)
-    # net=torch.nn.DataParallel(net,[0]).cuda()
+    # net=torch.nn.DataParallel(net,[0]).cuda() #Linia cu cuda
+
+
     net = torch.nn.DataParallel(net, [0]) #wrappuie modelul cu dataparellel pentru a enable-ui multi GPU training. Se specifica sa se foloseasca doar GPU cu id 0???????????
     # load trained model
     if LOAD: #incarca state dictionary ul unui model pre antrenat daca LOAD e setat la un path valid  dar e pus False acum

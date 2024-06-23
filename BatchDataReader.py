@@ -30,10 +30,8 @@ class CubeDataset(Dataset):
             if modal != modality[-1]:  # ne asiguram ca nu e label modality (care e ultima)
                 self.datasetlist['data'].update(
                     {modal: {}})  # adauga un nou dictionar pt modalitatea curenta pt a stoca image paths
-                imglist = os.listdir(os.path.join(data_dir,
-                                                  modal))  # listeaza toate fisierele din directorul modalitatii curente si le salveaza in imglist
-                imglist = natsort.natsorted(
-                    imglist)  # le sorteaza in ordine naturala (de la 10001 la 10300 sau cate pui)
+                imglist = os.listdir(os.path.join(data_dir, modal))  # listeaza toate fisierele din directorul modalitatii curente si le salveaza in imglist
+                imglist = natsort.natsorted(imglist)  # le sorteaza in ordine naturala (de la 10001 la 10300 sau cate pui)
                 for img in imglist[data_id[0]:data_id[
                     1]]:  # itereaza peste imaginile sortate din range ul specificat de tupla data_id
                     self.datasetlist['data'][modal].update(

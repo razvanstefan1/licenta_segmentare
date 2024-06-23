@@ -60,13 +60,10 @@ if __name__ == '__main__':
     os.environ['CUDA_VISIBLE_DEVICES'] = GPU_IDS #restrictioneaza gpu urile vizibile la cele specificate
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') #daca e un gpu available il pune pe ala, daca nu, pe CPU
     logging.info(f'Using device {device}')
+
     # Loading network
     net = UNet(in_channels=IN_CHANNELS, n_classes=N_CLASSES, channels=CHANNELS) #initializeaza o instanta a modelului cu input channels specificate, nr de clase specificate si nr de canale
-    # net = AVNet(in_channels=opt.in_channels, n_classes=opt.n_classes, channels=opt.channels)
-    # net = UNetpp(in_channels=opt.in_channels, n_classes=opt.n_classes, channels=opt.channels)
-    # net = UNetppp(in_channels=opt.in_channels, n_classes=opt.n_classes, channels=opt.channels)
-    # net = AttUNet(in_channels=opt.in_channels, n_classes=opt.n_classes, channels=opt.channels)
-    # net = CSNet(in_channels=opt.in_channels, n_classes=opt.n_classes)
+
     # Load trained model
     best_model_path = os.path.join(SAVEROOT, 'best_model',natsort.natsorted(os.listdir(os.path.join(SAVEROOT, 'best_model')))[-1]) #face path pt best models si alege ultimul model directory dupa sortare (cel mai bun)
     restore_path = os.path.join(best_model_path, os.listdir(best_model_path)[0]) #selecteaza path ul la primul fisier din best model directory

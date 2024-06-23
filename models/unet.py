@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 class unetConv2(nn.Module):
-    def __init__(self, in_size, out_size, is_batchnorm, n=3, ks=3, stride=1, padding=1):
+    def __init__(self, input_channel_size, output_channel_size, use_batchnorm, n=3, ks=3, stride=1, padding=1):
         super(unetConv2, self).__init__()
         self.n = n
         self.ks = ks
@@ -11,36 +11,36 @@ class unetConv2(nn.Module):
         self.padding = padding
         s = stride
         p = padding
-        if is_batchnorm:
+        if use_batchnorm:
             for i in range(1, n + 1):
-                conv = nn.Sequential(nn.Conv2d(in_size, out_size, ks, s, p),
-                                     nn.BatchNorm2d(out_size),
+                conv = nn.Sequential(nn.Conv2d(input_channel_size, output_channel_size, ks, s, p),
+                                     nn.BatchNorm2d(output_channel_size),
                                      nn.ReLU(inplace=True), )
                 setattr(self, 'conv%d' % i, conv)
-                in_size = out_size
+                input_channel_size = output_channel_size
 
         else:
             for i in range(1, n + 1):
-                conv = nn.Sequential(nn.Conv2d(in_size, out_size, ks, s, p),
+                conv = nn.Sequential(nn.Conv2d(input_channel_size, output_channel_size, ks, s, p),
                                      nn.ReLU(inplace=True), )
                 setattr(self, 'conv%d' % i, conv)
-                in_size = out_size
+                input_channel_size = output_channel_size
 
 
-    def forward(self, inputs):
+    def forward(self, inputs): #aplicam fiecare convolutional layer in mod secvential, pe input
         x = inputs
         for i in range(1, self.n + 1):
             conv = getattr(self, 'conv%d' % i)
             x = conv(x)
 
         return x
-class unetUp(nn.Module):
-    def __init__(self, in_size, out_size, is_deconv, n_concat=2):
+class unetUp(nn.Module): #upsampling block
+    def __init__(self, input_channel_size, output_channel_size, use_deconv, n_concat=2):
         super(unetUp, self).__init__()
         # self.conv = unetConv2(in_size + (n_concat - 2) * out_size, out_size, False)
-        self.conv = unetConv2(in_size, out_size, False)
-        if is_deconv:
-            self.up = nn.ConvTranspose2d(out_size, out_size, kernel_size=4, stride=2, padding=1)
+        self.conv = unetConv2(input_channel_size, output_channel_size, False)
+        if use_deconv:
+            self.up = nn.ConvTranspose2d(output_channel_size, output_channel_size, kernel_size=4, stride=2, padding=1)
         else:
             self.up = nn.UpsamplingBilinear2d(scale_factor=2)
 
