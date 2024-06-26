@@ -2,18 +2,18 @@
 import torch
 import torch.nn as nn
 
-class unetConv2(nn.Module):
-    def __init__(self, input_channel_size, output_channel_size, use_batchnorm, n=3, ks=3, stride=1, padding=1):
+class unetConv2(nn.Module):                                            #n=nr de conv layers in acest bloc, ks = kernel_size
+    def __init__(self, input_channel_size, output_channel_size, use_batchnorm, n=3, kernel_size=3, stride=1, padding=1):
         super(unetConv2, self).__init__()
         self.n = n
-        self.ks = ks
+        self.ks = kernel_size
         self.stride = stride
         self.padding = padding
         s = stride
         p = padding
         if use_batchnorm:
             for i in range(1, n + 1):
-                conv = nn.Sequential(nn.Conv2d(input_channel_size, output_channel_size, ks, s, p),
+                conv = nn.Sequential(nn.Conv2d(input_channel_size, output_channel_size, kernel_size, s, p),
                                      nn.BatchNorm2d(output_channel_size),
                                      nn.ReLU(inplace=True), )
                 setattr(self, 'conv%d' % i, conv)
@@ -21,7 +21,7 @@ class unetConv2(nn.Module):
 
         else:
             for i in range(1, n + 1):
-                conv = nn.Sequential(nn.Conv2d(input_channel_size, output_channel_size, ks, s, p),
+                conv = nn.Sequential(nn.Conv2d(input_channel_size, output_channel_size, kernel_size, s, p),
                                      nn.ReLU(inplace=True), )
                 setattr(self, 'conv%d' % i, conv)
                 input_channel_size = output_channel_size
