@@ -96,3 +96,6 @@ class CubeDataset(Dataset):
                 image[i,:,:] = random_noise(image[i,:,:], mode='gaussian')
         '''
         return image, annotation
+
+    def __len__(self):
+        return self.datanum

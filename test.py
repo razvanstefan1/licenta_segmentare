@@ -12,7 +12,7 @@ from tqdm import tqdm
 import BatchDataReader
 from models.unet import UNet
 
-DATAROOT = 'C:\\Users\\brolz\\Desktop\\FACULTATE\\LICENTA\\STERGE'# Path to data
+DATAROOT = 'C:\\Users\\brolz\\Desktop\\FACULTATE\\LICENTA\\MODALITIES'# Path to data
 GPU_IDS = '2'# GPU IDs
 TRAIN_IDS = [0, 240]# Train ID numbers
 VAL_IDS = [240, 250]# Validation ID numbers

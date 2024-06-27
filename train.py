@@ -16,7 +16,7 @@ import argparse
 
 
 # Global variables
-DATAROOT_PATH = 'C:\\Users\\brolz\\Desktop\\FACULTATE\\LICENTA\\STERGE'  # Path to data
+DATAROOT_PATH = 'C:\\Users\\brolz\\Desktop\\FACULTATE\\LICENTA\\MODALITIES'  # Path to data
 GPU_IDS = '2'  # GPU ids sa foloseasca al doilea GPU. Daca vrei mai multe le pui cu virgula  gen GPU_IDS = '0,1'
 TRAIN_IDS = [0, 240]  # Train id range
 VAL_IDS = [240, 250]  # Validation id range
