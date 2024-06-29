@@ -60,7 +60,7 @@ class ImageApp:
         self.oct_full_text_label.pack_forget()
         self.oct_full_label = tk.Label(self.oct_full_frame)
         self.oct_full_label.pack()
-        self.oct_full_label.bind("<Button-1>", lambda e: self.change_main_image(self.oct_full_image))
+        self.oct_full_label.bind("<Button-1>", lambda e: self.change_main_image(self.oct_full_image, "OCT_FULL"))
 
         self.oct_ilm_opl_frame = tk.Frame(self.modality_frame)
         self.oct_ilm_opl_frame.grid(row=0, column=1, padx=10, pady=10, sticky="n")
@@ -68,7 +68,7 @@ class ImageApp:
         self.oct_ilm_opl_text_label.pack_forget()
         self.oct_ilm_opl_label = tk.Label(self.oct_ilm_opl_frame)
         self.oct_ilm_opl_label.pack()
-        self.oct_ilm_opl_label.bind("<Button-1>", lambda e: self.change_main_image(self.oct_ilm_opl_image))
+        self.oct_ilm_opl_label.bind("<Button-1>", lambda e: self.change_main_image(self.oct_ilm_opl_image, "OCT_ILM_OPL"))
 
         self.oct_opl_bm_frame = tk.Frame(self.modality_frame)
         self.oct_opl_bm_frame.grid(row=0, column=2, padx=10, pady=10, sticky="n")
@@ -76,7 +76,7 @@ class ImageApp:
         self.oct_opl_bm_text_label.pack_forget()
         self.oct_opl_bm_label = tk.Label(self.oct_opl_bm_frame)
         self.oct_opl_bm_label.pack()
-        self.oct_opl_bm_label.bind("<Button-1>", lambda e: self.change_main_image(self.oct_opl_bm_image))
+        self.oct_opl_bm_label.bind("<Button-1>", lambda e: self.change_main_image(self.oct_opl_bm_image, "OCT_OPL_BM"))
 
         self.octa_full_frame = tk.Frame(self.modality_frame)
         self.octa_full_frame.grid(row=1, column=0, padx=10, pady=10, sticky="n")
@@ -84,7 +84,7 @@ class ImageApp:
         self.octa_full_text_label.pack_forget()
         self.octa_full_label = tk.Label(self.octa_full_frame)
         self.octa_full_label.pack()
-        self.octa_full_label.bind("<Button-1>", lambda e: self.change_main_image(self.octa_full_image))
+        self.octa_full_label.bind("<Button-1>", lambda e: self.change_main_image(self.octa_full_image, "OCTA_FULL"))
 
         self.octa_ilm_opl_frame = tk.Frame(self.modality_frame)
         self.octa_ilm_opl_frame.grid(row=1, column=1, padx=10, pady=10, sticky="n")
@@ -92,7 +92,7 @@ class ImageApp:
         self.octa_ilm_opl_text_label.pack_forget()
         self.octa_ilm_opl_label = tk.Label(self.octa_ilm_opl_frame)
         self.octa_ilm_opl_label.pack()
-        self.octa_ilm_opl_label.bind("<Button-1>", lambda e: self.change_main_image(self.octa_ilm_opl_image))
+        self.octa_ilm_opl_label.bind("<Button-1>", lambda e: self.change_main_image(self.octa_ilm_opl_image, "OCTA_ILM_OPL"))
 
         self.octa_opl_bm_frame = tk.Frame(self.modality_frame)
         self.octa_opl_bm_frame.grid(row=1, column=2, padx=10, pady=10, sticky="n")
@@ -100,7 +100,7 @@ class ImageApp:
         self.octa_opl_bm_text_label.pack_forget()
         self.octa_opl_bm_label = tk.Label(self.octa_opl_bm_frame)
         self.octa_opl_bm_label.pack()
-        self.octa_opl_bm_label.bind("<Button-1>", lambda e: self.change_main_image(self.octa_opl_bm_image))
+        self.octa_opl_bm_label.bind("<Button-1>", lambda e: self.change_main_image(self.octa_opl_bm_image, "OCTA_OPL_BM"))
 
         # frame pt histograma
         self.histogram_frame = tk.Frame(root)
@@ -213,11 +213,12 @@ class ImageApp:
         self.octa_opl_bm_label.image = photo
         self.octa_opl_bm_text_label.pack()  # facem label ul vizibil
 
-    #sa se schimbe imaginea principala cu cea pe care se da click 
-    def change_main_image(self, image):
+    #sa se schimbe imaginea principala cu cea pe care se da click
+    def change_main_image(self, image, main_label_text):
         photo = ImageTk.PhotoImage(image)
         self.main_img_label.config(image=photo)
         self.main_img_label.image = photo
+        self.main_img_text_label.config(text=main_label_text)
 
     def call_generate_segmentation_external(self, filename, resolution, modality_path, test_results_path):
         self.cv_image = GenerateSegmentation.generateSegmentationExternal(
