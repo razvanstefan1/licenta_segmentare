@@ -7,7 +7,7 @@ class ImageApp:
         self.root = root
         self.root.title("Image Pixel Color Viewer")
 
-        self.open_button = tk.Button(root, text="Open BMP Image", command=self.open_image)
+        self.open_button = tk.Button(root, text="Open Image", command=self.open_image)
         self.open_button.pack(pady=10)
 
         self.image_label = tk.Label(root)
@@ -16,7 +16,7 @@ class ImageApp:
         self.image = None
 
     def open_image(self):
-        file_path = filedialog.askopenfilename(filetypes=[("BMP files", "*.bmp")])
+        file_path = filedialog.askopenfilename(filetypes=[("PNG files", "*.png")])
         if file_path:
             self.image = Image.open(file_path)
             photo = ImageTk.PhotoImage(self.image)

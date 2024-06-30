@@ -10,7 +10,7 @@ IMAGE_RESOLUTION = [400, 400]
 IN_MODALITIES = 6
 CHANNELS = 128
 OUTPUT_CLASSES = 5
-IMAGE_NUM = 10251
+IMAGE_NUM = 10444
 MODALITY_ROOT_DIRECTORY = 'C:\\Users\\brolz\\Desktop\\FACULTATE\\LICENTA\\MODALITIES\\'
 IMAGE_MODALITY_PATHS = [
     f'{MODALITY_ROOT_DIRECTORY}OCT(OPL_BM)\\{IMAGE_NUM}.bmp',
@@ -36,7 +36,7 @@ def get_images(image_paths, image_resolution):
     return torch.tensor(stacked_images, dtype=torch.float32)
 
 #this method generates the segmentation for when running the app
-def generate_segmentation(net, device, image_paths, output_path, image_res):
+def generate_segmentation(image_number, net, device, image_paths, output_path, image_res):
     images = get_images(image_paths, image_res).to(device=device)
     net.eval()
 
@@ -44,7 +44,7 @@ def generate_segmentation(net, device, image_paths, output_path, image_res):
         pred = net(images)
         pred_argmax = torch.argmax(pred, dim=1)
         pred_argmax = pred_argmax.cpu().numpy()[0]
-        cv2.imwrite(os.path.join(output_path, f'{IMAGE_RESOLUTION}prediction_labels.png'), pred_argmax)
+        cv2.imwrite(os.path.join(output_path, f'{image_number}_prediction_labels.png'), pred_argmax)
 
         pred_softmax = torch.nn.functional.softmax(pred, dim=1)
         pred_softmax = pred_softmax.cpu().numpy()[0]
@@ -87,7 +87,7 @@ def generateSegmentationExternal(image_number, ext_output_path, image_resolution
     network_model_path = 'C:\\Users\\brolz\\Desktop\\FACULTATE\\LICENTA\\COD_LICENTA_SEGMENTARE\\saveroot\\best_model\\0.77\\1.pth'
     net.load_state_dict(torch.load(network_model_path, map_location=cpu))
     net.to(device=cpu)
-    return generate_segmentation(net=net, device=cpu, image_paths=image_modality_paths, output_path=ext_output_path, image_res=image_resolution)
+    return generate_segmentation(image_number = image_number, net=net, device=cpu, image_paths=image_modality_paths, output_path=ext_output_path, image_res=image_resolution)
 
 if __name__ == '__main__':
 
@@ -101,4 +101,4 @@ if __name__ == '__main__':
     net.load_state_dict(torch.load(network_model_path, map_location=cpu))
 
     net.to(device=cpu)
-    generate_segmentation(net=net, device=cpu, image_paths=IMAGE_MODALITY_PATHS, output_path=OUTPUT_PATH, image_res=IMAGE_RESOLUTION)
+    generate_segmentation(image_number=IMAGE_NUM, net=net, device=cpu, image_paths=IMAGE_MODALITY_PATHS, output_path=OUTPUT_PATH, image_res=IMAGE_RESOLUTION)
