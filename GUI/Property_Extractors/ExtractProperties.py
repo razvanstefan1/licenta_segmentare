@@ -26,11 +26,11 @@ def calculate_properties(cv_image):
     FAZ_circularity = calculate_circularity(cv_image)
 
 
-    artery_diameter_index = calculate_diameter_index(cv_image, [(2, 2, 2)])
+    artery_diameter_index = calculate_diameter_index(cv_image, [(2, 2, 2)], 3)
     #ACEEASI CONVENTIE CA SI LA GROUND TRUTHS UNDE CAPILLARY E SI VEIN SI ARTERY
-    capillary_diameter_index = calculate_diameter_index(cv_image, [(1, 1, 1), (2, 2, 2), (3, 3, 3)])
-    vein_diameter_index = calculate_diameter_index(cv_image, [(3, 3, 3)])
-    large_vessel_diameter_index = calculate_diameter_index(cv_image, [(2, 2, 2), (3, 3, 3)])
+    capillary_diameter_index = calculate_diameter_index(cv_image, [(1, 1, 1), (2, 2, 2), (3, 3, 3)], 3)
+    vein_diameter_index = calculate_diameter_index(cv_image, [(3, 3, 3)], 3)
+    large_vessel_diameter_index = calculate_diameter_index(cv_image, [(2, 2, 2), (3, 3, 3)], 3)
 
 
     print(f"FAZ circularity: {FAZ_circularity}")
@@ -43,6 +43,8 @@ def calculate_properties(cv_image):
     print(f"Capillary diameter index: {capillary_diameter_index}")
     print(f"Vein diameter index: {vein_diameter_index}")
     print(f"Large vessel diameter index: {large_vessel_diameter_index}")
+
+    return FAZ_circularity, artery_density, capillary_density, LV_density, vein_density, artery_diameter_index, capillary_diameter_index, vein_diameter_index, large_vessel_diameter_index
 
 
 
@@ -96,54 +98,63 @@ def calculate_circularity(cv_image):
     return circularity
 
 
-def calculate_diameter_index(image, colors_to_white):
-    # Convert the image to grayscale
-    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+def calculate_diameter_index(cv_image, colors_to_white, patch_size):
+    #convertim la grayscale, deoarece skeletonize foloseste imagini grayscale
+    gray_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
 
-    # Initialize the binary image
-    binary_image = np.zeros_like(gray_image)
+    # Initializam imaginea binara
+    black_white = np.zeros_like(gray_image)
 
-    # Set the specified colors to white in the binary image
-    for color in colors_to_white:
-        mask = cv2.inRange(image, np.array(color), np.array(color))
-        binary_image[mask > 0] = 255
+    # punem culorile specificate cu alb in imaginea binara
+    for color in colors_to_white: #normal, la inRange punem interval dar noi ne axam pe o sg culoare at a time
+        mask = cv2.inRange(cv_image, np.array(color), np.array(color)) #asa ca punem acelasi lower si upper bound
+        black_white[mask > 0] = 255
 
-    # Invert the binary image to make vessels white
-    binary_image = cv2.bitwise_not(binary_image)
+    # inversam pt a face vasele albe si restul negru
+    binary_image = cv2.bitwise_not(black_white)
 
-    # Skeletonize the binary image
-    skeleton = skeletonize(binary_image // 255).astype(np.uint8)
+    skeletonized_cv_image = skeletonize(binary_image // 255).astype(np.uint8)
 
-    # Find contours of the skeletonized image
-    contours, _ = cv2.findContours(skeleton, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    #extragem contururile imaginii skeletonizate
+    contours, _ = cv2.findContours(skeletonized_cv_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    # If no contours are found, return None
     if len(contours) == 0:
         return None
 
-    # Initialize the sum of diameters and the count of measurements
+    # if 1:
+    #     contour_image = cv_image.copy()
+    #     cv2.drawContours(contour_image, contours, -1, (0, 255, 0), 1)
+    #     cv2.imshow('Contours', contour_image)
+    #     cv2.waitKey(0)
+    #     cv2.destroyAllWindows()
+
     total_diameter = 0
     count = 0
 
+    patch_radius = patch_size // 2
     # Iterate over each contour (each vessel segment)
     for contour in contours:
         for point in contour:
             x, y = point[0]
-            # Extract a small patch around the skeleton point
-            patch = binary_image[max(0, y - 1):y + 2, max(0, x - 1):x + 2]
-            # Calculate the diameter as the sum of white pixels in the patch
+            #extragem small patch din jurul punctului de schelet de 3 pe 3 pixeli
+            patch = binary_image[max(0, y - patch_radius):y + patch_radius + 1,
+                    max(0, x - patch_radius):x + patch_radius + 1]
+            #patch = binary_image[max(0, y - 1):y + 2, max(0, x - 1):x + 2]
+            # diametrul e suma de pixeli albi din patch
             diameter = np.sum(patch == 255)
             total_diameter += diameter
             count += 1
 
-    # Calculate the average diameter (vessel diameter index)
-    diameter_index = total_diameter / count if count != 0 else 0
+    # Calculam media aritmetica a diametrelor (vessel diameter index)
+    if count != 0:
+        diameter_index = total_diameter / count
+    else:
+        diameter_index = 0
     return diameter_index
 
 
 def show_skeletonized_image(skeleton):
-    # Display the skeletonized image using matplotlib
     plt.imshow(skeleton, cmap='gray')
-    plt.title("Skeletonized Image")
-    plt.axis('off')  # Hide axes
+    plt.title("skeleton")
+    plt.axis('off')
     plt.show()
