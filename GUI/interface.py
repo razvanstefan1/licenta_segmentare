@@ -1,6 +1,9 @@
 import os
 import tkinter as tk
 from tkinter import filedialog, ttk
+
+import joblib
+import pandas as pd
 from PIL import Image, ImageTk
 import cv2
 import numpy as np
@@ -9,7 +12,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import GenerateSegmentation
 from GUI.Property_Extractors import ExtractProperties
-
+from GUI.RandomForest import RandomForest
 
 
 # trimitem image number la generatesegmentation precum si rezolutia
@@ -25,6 +28,14 @@ class ImageApp:
         self.upper_left_frame = tk.Frame(root)
         self.upper_left_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nw")
 
+        #frame pentru histograma si properties
+        self.upper_right_frame = tk.Frame(root)
+        self.upper_right_frame.grid(row=0, column=1, padx=10, pady=10, sticky="ne")
+
+        #frame pentru rezultat predictie si altele
+        self.lower_right_frame = tk.Frame(root, bd=2, relief='solid')
+        self.lower_right_frame.grid(row=1, column=1, padx=10, pady=10, sticky="se")
+
         # frame butoane
         self.button_frame = tk.Frame(self.upper_left_frame)
         self.button_frame.grid(row=0, column=0, padx=10, pady=10, sticky="n")
@@ -33,16 +44,20 @@ class ImageApp:
         self.open_button = ttk.Button(self.button_frame, text="Open Image", command=self.open_image)
         self.open_button.pack(pady=5)
 
+        self.calculate_histogram_button = ttk.Button(self.button_frame, text="Calculate Histogram",
+                                                     command=self.calculate_histogram)
+        self.calculate_histogram_button.pack(pady=5)
+
         #buton pt a afisa props extrase
         self.calculate_properties_button = ttk.Button(self.button_frame, text="Calculate Properties", command=self.show_properties)
         self.calculate_properties_button.pack(pady=5)
 
-        self.calculate_button = ttk.Button(self.button_frame, text="Calculate Histogram",
-                                           command=self.calculate_histogram)
-        self.calculate_button.pack(pady=5)
-
         self.color_button = ttk.Button(self.button_frame, text="Color Predictions", command=self.ShowColoredPredictions)
         self.color_button.pack(pady=5)
+
+        #buton pentru a obtine diagnosticul
+        self.diagnose_button = ttk.Button(self.button_frame, text="Health prediction", command=self.diagnose)
+        self.diagnose_button.pack(pady=5)
 
         # frame pentru imagine
         self.main_img_frame = tk.Frame(self.upper_left_frame)
@@ -109,10 +124,10 @@ class ImageApp:
         self.octa_opl_bm_label.bind("<Button-1>", lambda e: self.change_main_image(self.octa_opl_bm_image, "OCTA_OPL_BM"))
 
         # frame pt histograma
-        self.histogram_frame = tk.Frame(root)
+        self.histogram_frame = tk.Frame(self.upper_right_frame)
         self.histogram_frame.grid(row=0, column=2, padx=10, pady=10, sticky="n")
 
-        self.properties_frame = tk.Frame(root)
+        self.properties_frame = tk.Frame(self.upper_right_frame)
         self.properties_frame.grid(row=0, column=3, padx=10, pady=10, sticky="n")
 
         self.checkbox_frame = tk.Frame(self.button_frame)
@@ -158,6 +173,7 @@ class ImageApp:
         # ascundem histograma si ariile cand deschidem alta poza ca sa nu ramana cea de la poza trecuta
         self.histogram_frame.grid_forget()
         self.properties_frame.grid_forget()
+        self.lower_right_frame.grid_forget()
 
         if file_path:
             self.image = Image.open(file_path)
@@ -306,7 +322,7 @@ class ImageApp:
             self.surface_areas = {color: count * area_per_pixel for color, count in color_histogram.items()}
 
             fig, ax = plt.subplots()
-            fig.set_size_inches(4.7, 2.5)
+            fig.set_size_inches(4.7, 3)
             ax.set_facecolor('gray')
             ax.bar(color_histogram.keys(), color_histogram.values(), color=['black', 'white', 'purple', 'blue', 'red'])
             ax.set_xlabel('Colors')
@@ -429,6 +445,49 @@ class ImageApp:
             self.main_img_label.image = photo
             print(self.image.size)
 
+    def get_age_by_id(self, csv_path, given_id):
+        df = pd.read_csv(csv_path, dtype={'ID': str})
+        given_id = str(given_id)
+        try:
+            age = df.loc[df['ID'].str.strip() == given_id, 'Age'].values[0]
+            return age
+        except IndexError:
+            return None
+
+    def diagnose(self):
+        feature_list = ['Age', 'FAZ_circularity', 'Art_density', 'Cap_density', 'Vein_density', 'Artery_diameter_index',
+                        'Capillary_diameter_index', 'Vein_diameter_index', 'LargeVessel_diameter_index']
+        target_disease = 'NORMAL'
+
+        #folosim tree-ul salvat pt a genera predictia
+        RF = joblib.load('RandomForest\\random_forest_model.pkl')
+
+        age = self.get_age_by_id('C:\\Users\\brolz\\Desktop\\FACULTATE\\LICENTA\\COD_LICENTA_SEGMENTARE\\GUI\\RandomForest\\Text_labels_and_Numerical_Data_no_surface_areas_csv.csv', self.filename.split('.')[0])
+
+        if age is None:
+            age = 43 #varsta mediana din dataset
+
+        print(self.filename.split('.')[0] + ' ' + str(age))
+
+        prediction = RandomForest.GenerateClassificationResult(
+            [age, self.FAZ_circularity, self.artery_density, self.capillary_density,
+             self.vein_density, self.artery_diameter_index, self.capillary_diameter_index, self.vein_diameter_index,
+             self.large_vessel_diameter_index], feature_list, target_disease, RF)
+
+        for widget in self.lower_right_frame.winfo_children():
+            widget.destroy()
+
+        if prediction == 1:
+            text = f'Classification result: Healthy'
+        else:
+            text = f'Classification result: NOT Healthy'
+
+        label = tk.Label(self.lower_right_frame, text=text, font=("Helvetica", 14, "bold"))
+        label.pack(pady=10)
+
+        #aratam din nou partea cu diagnosticul
+        self.lower_right_frame.grid(row=1, column=1, padx=10, pady=10, sticky="ne")
+
 
 if __name__ == "__main__":
     root = tk.Tk()
@@ -441,6 +500,8 @@ if __name__ == "__main__":
 # import os
 # import tkinter as tk
 # from tkinter import filedialog, ttk
+#
+# import joblib
 # from PIL import Image, ImageTk
 # import cv2
 # import numpy as np
@@ -449,19 +510,25 @@ if __name__ == "__main__":
 # from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 # import GenerateSegmentation
 # from GUI.Property_Extractors import ExtractProperties
-#
+# from GUI.RandomForest import RandomForest
 #
 #
 # # trimitem image number la generatesegmentation precum si rezolutia
 # class ImageApp:
 #     def __init__(self, root):
+#
 #         self.root = root
 #         self.root.title("Image Segmentation Viewer")
-#         self.root.geometry("1920x1080")  # Set the window size
+#         self.root.geometry("1600x1080")  # Set the window size
 #
+#         self.surface_areas = None
 #         # frame pt butoane si imaginea principala
 #         self.upper_left_frame = tk.Frame(root)
 #         self.upper_left_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nw")
+#
+#         #frame pentru rezultat predictie si altele
+#         self.lower_right_frame = tk.Frame(root, bd=2, relief='solid')
+#         self.lower_right_frame.grid(row=1, column=1, padx=10, pady=10, sticky="se")
 #
 #         # frame butoane
 #         self.button_frame = tk.Frame(self.upper_left_frame)
@@ -471,12 +538,20 @@ if __name__ == "__main__":
 #         self.open_button = ttk.Button(self.button_frame, text="Open Image", command=self.open_image)
 #         self.open_button.pack(pady=5)
 #
-#         self.calculate_button = ttk.Button(self.button_frame, text="Calculate Histogram",
-#                                            command=self.calculate_histogram)
-#         self.calculate_button.pack(pady=5)
+#         self.calculate_histogram_button = ttk.Button(self.button_frame, text="Calculate Histogram",
+#                                                      command=self.calculate_histogram)
+#         self.calculate_histogram_button.pack(pady=5)
+#
+#         #buton pt a afisa props extrase
+#         self.calculate_properties_button = ttk.Button(self.button_frame, text="Calculate Properties", command=self.show_properties)
+#         self.calculate_properties_button.pack(pady=5)
 #
 #         self.color_button = ttk.Button(self.button_frame, text="Color Predictions", command=self.ShowColoredPredictions)
 #         self.color_button.pack(pady=5)
+#
+#         #buton pentru a obtine diagnosticul
+#         self.diagnose_button = ttk.Button(self.button_frame, text="Health prediction", command=self.diagnose)
+#         self.diagnose_button.pack(pady=5)
 #
 #         # frame pentru imagine
 #         self.main_img_frame = tk.Frame(self.upper_left_frame)
@@ -546,8 +621,8 @@ if __name__ == "__main__":
 #         self.histogram_frame = tk.Frame(root)
 #         self.histogram_frame.grid(row=0, column=2, padx=10, pady=10, sticky="n")
 #
-#         self.area_frame = tk.Frame(root)
-#         self.area_frame.grid(row=0, column=3, padx=10, pady=10, sticky="n")
+#         self.properties_frame = tk.Frame(root)
+#         self.properties_frame.grid(row=0, column=3, padx=10, pady=10, sticky="n")
 #
 #         self.checkbox_frame = tk.Frame(self.button_frame)
 #         self.checkbox_frame.pack(pady=5)
@@ -574,12 +649,24 @@ if __name__ == "__main__":
 #         self.show_artery.trace_add("write", lambda *args: self.HideOrShowComponents())
 #         self.show_faz.trace_add("write", lambda *args: self.HideOrShowComponents())
 #
+#         #proprietatile extrase
+#         self.FAZ_circularity = 0
+#         self.artery_density = 0
+#         self.capillary_density = 0
+#         self.LV_density = 0
+#         self.vein_density = 0
+#         self.artery_diameter_index = 0
+#         self.capillary_diameter_index = 0
+#         self.vein_diameter_index = 0
+#         self.large_vessel_diameter_index = 0
+#
+#
 #     def open_image(self):
 #         file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg;*.jpeg;*.png;*.gif;*.bmp")])
 #
 #         # ascundem histograma si ariile cand deschidem alta poza ca sa nu ramana cea de la poza trecuta
 #         self.histogram_frame.grid_forget()
-#         self.area_frame.grid_forget()
+#         self.properties_frame.grid_forget()
 #
 #         if file_path:
 #             self.image = Image.open(file_path)
@@ -680,10 +767,18 @@ if __name__ == "__main__":
 #         )
 #         if self.cv_image is not None:
 #             self.cv_image = cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2RGB)
-#             #call la property extractor
-#             ExtractProperties.calculate_properties(self.cv_image)
-#             #call la color predictions
+#             # call la color predictions
 #             self.ColorPredictions()
+#             #call la property extractor
+#             (self.FAZ_circularity,
+#              self.artery_density,
+#              self.capillary_density,
+#              self.LV_density,
+#              self.vein_density,
+#              self.artery_diameter_index,
+#              self.capillary_diameter_index,
+#              self.vein_diameter_index,
+#              self.large_vessel_diameter_index) = ExtractProperties.calculate_properties(self.cv_image)
 #         else:
 #             print(f"Image not found in the test_results directory: {test_results_path}")
 #
@@ -717,10 +812,10 @@ if __name__ == "__main__":
 #
 #             area_per_pixel = (img_dim * img_dim) / total_pixels
 #
-#             surface_areas = {color: count * area_per_pixel for color, count in color_histogram.items()}
+#             self.surface_areas = {color: count * area_per_pixel for color, count in color_histogram.items()}
 #
 #             fig, ax = plt.subplots()
-#             fig.set_size_inches(4.7, 2.5)
+#             fig.set_size_inches(4.7, 3)
 #             ax.set_facecolor('gray')
 #             ax.bar(color_histogram.keys(), color_histogram.values(), color=['black', 'white', 'purple', 'blue', 'red'])
 #             ax.set_xlabel('Colors')
@@ -733,19 +828,48 @@ if __name__ == "__main__":
 #             canvas.draw()
 #             canvas.get_tk_widget().pack()
 #
-#             for widget in self.area_frame.winfo_children():
+#             for widget in self.properties_frame.winfo_children():
 #                 widget.destroy()
-#
-#             for color, area in surface_areas.items():
-#                 label = tk.Label(self.area_frame, text=f"{color.capitalize()} area: {area:.2f} mm^2")
-#                 label.pack()
 #
 #             #aratam din nou histograma si aria (sa se faca refresh cand schimbi imaginea)
 #             self.histogram_frame.grid(row=0, column=2, padx=10, pady=10, sticky="n")
-#             self.area_frame.grid(row=0, column=3, padx=10, pady=10, sticky="n")
+#             self.properties_frame.grid(row=0, column=3, padx=10, pady=10, sticky="n")
 #
 #         else:
 #             print("No image loaded!")
+#
+#     def show_properties(self):
+#         properties = [
+#             ("FAZ Circularity:", f"{self.FAZ_circularity:.2f}%"),
+#             ("Artery Density:", f"{self.artery_density:.2f} mm^-2"),
+#             ("Capillary Density:", f"{self.capillary_density:.2f} mm^-2"),
+#             ("Large Vessel Density:", f"{self.LV_density:.2f} mm^-2"),
+#             ("Vein Density:", f"{self.vein_density:.2f} mm^-2"),
+#             ("Artery Diameter Index:", f"{self.artery_diameter_index:.2f}"),
+#             ("Capillary Diameter Index:", f"{self.capillary_diameter_index:.2f}"),
+#             ("Vein Diameter Index:", f"{self.vein_diameter_index:.2f}"),
+#             ("Large Vessel Diameter Index:", f"{self.large_vessel_diameter_index:.2f}"),
+#         ]
+#
+#         for row, (prop, value) in enumerate(properties):
+#             label_prop = tk.Label(self.properties_frame, text=prop, anchor="w", font=("Helvetica", 12, "bold"))
+#             label_prop.grid(row=row, column=0, sticky="w", padx=5, pady=2)
+#
+#             label_value = tk.Label(self.properties_frame, text=value, anchor="w", font=("Helvetica", 12, "bold"),
+#                                    fg="red")
+#             label_value.grid(row=row, column=1, sticky="w", padx=5, pady=2)
+#
+#         for row, (color, area) in enumerate(self.surface_areas.items(), start=len(properties)):
+#             label_color = tk.Label(self.properties_frame, text=f"{color.capitalize()} area:", anchor="w",
+#                                    font=("Helvetica", 12, "bold"))
+#             label_color.grid(row=row, column=0, sticky="w", padx=5, pady=2)
+#
+#             label_area = tk.Label(self.properties_frame, text=f"{area:.2f} mm^2", anchor="w",
+#                                   font=("Helvetica", 12, "bold"), fg="red")
+#             label_area.grid(row=row, column=1, sticky="w", padx=5, pady=2)
+#
+#         self.properties_frame.columnconfigure(0, weight=1)
+#         self.properties_frame.columnconfigure(1, weight=1)
 #
 #     def print_pixel_color(self, event):
 #         if hasattr(self, 'cv_image'):
@@ -814,10 +938,32 @@ if __name__ == "__main__":
 #             self.main_img_label.image = photo
 #             print(self.image.size)
 #
+#     def diagnose(self):
+#         feature_list = ['Age', 'FAZ_circularity', 'Art_density', 'Cap_density', 'Vein_density', 'Artery_diameter_index',
+#                         'Capillary_diameter_index', 'Vein_diameter_index', 'LargeVessel_diameter_index']
+#         target_disease = 'NORMAL'
+#
+#         #folosim tree-ul salvat pt a genera predictia
+#         RF = joblib.load('RandomForest\\random_forest_model.pkl')
+#
+#         prediction = RandomForest.GenerateClassificationResult(
+#             [55, self.FAZ_circularity, self.artery_density, self.capillary_density,
+#              self.vein_density, self.artery_diameter_index, self.capillary_diameter_index, self.vein_diameter_index,
+#              self.large_vessel_diameter_index], feature_list, target_disease, RF)
+#
+#         for widget in self.lower_right_frame.winfo_children():
+#             widget.destroy()
+#
+#         if prediction == 1:
+#             text = f'Classification result: Healthy'
+#         else:
+#             text = f'Classification result: NOT Healthy'
+#
+#         label = tk.Label(self.lower_right_frame, text=text, font=("Helvetica", 14, "bold"))
+#         label.pack(pady=10)
+#
 #
 # if __name__ == "__main__":
 #     root = tk.Tk()
 #     app = ImageApp(root)
 #     root.mainloop()
-#
-#

@@ -1,4 +1,5 @@
 import graphviz
+import joblib
 import pandas as pd
 from matplotlib import pyplot as plt
 from sklearn.model_selection import train_test_split
@@ -27,6 +28,9 @@ def GenerateTrainTestRForest(csv_path, target_column, target_disease, feature_li
 
     #boala target
     y=eye_measurements[target_disease]
+
+    #convertim sexul in valori numerice
+   # X.loc[:, 'Sex'] = X['Sex'].map({'F': 0, 'M': 1})
 
     #splittuim datasetul in train si test
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=percentage_test_data, random_state=seed_number)
@@ -101,15 +105,17 @@ def GenerateClassificationResult(value_row, feature_list, target_disease, RF):
 
 if __name__ == '__main__':
     csv_path = 'C:\\Users\\brolz\\Desktop\\FACULTATE\\LICENTA\\COD_LICENTA_SEGMENTARE\\GUI\\RandomForest\\Text_labels_and_Numerical_Data_no_surface_areas_csv.csv'
+    #csv_path = 'C:\\Users\\brolz\\Desktop\\FACULTATE\\LICENTA\\COD_LICENTA_SEGMENTARE\\GUI\\RandomForest\\Text_labels_and_Numerical_Data_plusGender.csv'
     target_column = 'Disease'
     target_disease = 'NORMAL'
-    #feature_list = ['Age', 'FAZ_circularity', 'Art_density', 'Cap_density', 'LV_density', 'Vein_density', 'Artery_diameter_index', 'Capillary_diameter_index', 'Vein_diameter_index', 'LargeVessel_diameter_index']
-    feature_list = ['Age', 'FAZ_circularity', 'Art_density', 'Cap_density', 'Vein_density', 'Artery_diameter_index', 'Capillary_diameter_index', 'Vein_diameter_index', 'LargeVessel_diameter_index']
+    feature_list = ['Age', 'FAZ_circularity', 'Art_density', 'Cap_density', 'LV_density', 'Vein_density', 'Artery_diameter_index', 'Capillary_diameter_index', 'Vein_diameter_index', 'LargeVessel_diameter_index']
+    #feature_list = [ 'Age', 'Sex', 'FAZ_circularity', 'Art_density', 'Cap_density', 'Vein_density', 'Artery_diameter_index', 'Capillary_diameter_index', 'Vein_diameter_index', 'LargeVessel_diameter_index']
     estimator_count = 5000
     seed_number = 123
     percentage_test_data = 0.2
 
     RF=GenerateTrainTestRForest(csv_path, target_column, target_disease, feature_list, estimator_count, seed_number, percentage_test_data, show_importance_graph=True, show_tree_visualization=True)
 
+    joblib.dump(RF, 'random_forest_model.pkl')
     #print('generare')
     #GenerateClassificationResult([55,0.459722275,0.0390625,0.46563125,0.08276875,0.043975,8.933119744,6.331678888,8.935320228,8.899184149], feature_list, target_disease, RF)

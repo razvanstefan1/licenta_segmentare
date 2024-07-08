@@ -35,7 +35,7 @@ def get_images(image_paths, image_resolution):
     stacked_images = np.expand_dims(stacked_images, axis=0)
     return torch.tensor(stacked_images, dtype=torch.float32)
 
-#this method generates the segmentation for when running the app
+
 def generate_segmentation(image_number, net, device, image_paths, output_path, image_res):
     images = get_images(image_paths, image_res).to(device=device)
     net.eval()
@@ -48,22 +48,6 @@ def generate_segmentation(image_number, net, device, image_paths, output_path, i
 
         pred_softmax = torch.nn.functional.softmax(pred, dim=1)
         pred_softmax = pred_softmax.cpu().numpy()[0]
-
-        BGR = np.zeros((image_res[0], image_res[1], 3))
-        BGR[:, :, 0] = 53 * pred_softmax[0, :, :] + 143 * pred_softmax[1, :, :] + 28 * pred_softmax[2, :,
-                                                                                       :] + 186 * pred_softmax[3, :,
-                                                                                                  :] + 106 * pred_softmax[
-                                                                                                             4, :, :]
-        BGR[:, :, 1] = 32 * pred_softmax[0, :, :] + 165 * pred_softmax[1, :, :] + 25 * pred_softmax[2, :,
-                                                                                       :] + 131 * pred_softmax[3, :,
-                                                                                                  :] + 217 * pred_softmax[
-                                                                                                             4, :, :]
-        BGR[:, :, 2] = 15 * pred_softmax[0, :, :] + 171 * pred_softmax[1, :, :] + 215 * pred_softmax[2, :,
-                                                                                        :] + 43 * pred_softmax[3, :,
-                                                                                                  :] + 166 * pred_softmax[
-                                                                                                             4, :, :]
-
-        cv2.imwrite(os.path.join(output_path, f'{image_res}prediction_colored.png'), BGR)
 
         pred_argmax_uint8 = pred_argmax.astype(np.uint8)
         return pred_argmax_uint8
