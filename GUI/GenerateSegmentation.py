@@ -3,15 +3,15 @@ import logging
 import cv2
 import numpy as np
 import torch
-from models.unet import UNet
-import natsort
 
+import natsort
+from GLOBAL_PATHS import MODALITY_ROOT_DIRECTORY, OUTPUT_PATH
+from models.unet import UNet
 IMAGE_RESOLUTION = [400, 400]
 IN_MODALITIES = 6
 CHANNELS = 128
 OUTPUT_CLASSES = 5
 IMAGE_NUM = 10444
-MODALITY_ROOT_DIRECTORY = 'C:\\Users\\brolz\\Desktop\\FACULTATE\\LICENTA\\MODALITIES\\'
 IMAGE_MODALITY_PATHS = [
     f'{MODALITY_ROOT_DIRECTORY}OCT(OPL_BM)\\{IMAGE_NUM}.bmp',
     f'{MODALITY_ROOT_DIRECTORY}OCT(FULL)\\{IMAGE_NUM}.bmp',
@@ -20,9 +20,6 @@ IMAGE_MODALITY_PATHS = [
     f'{MODALITY_ROOT_DIRECTORY}OCTA(FULL)\\{IMAGE_NUM}.bmp',
     f'{MODALITY_ROOT_DIRECTORY}OCTA(ILM_OPL)\\{IMAGE_NUM}.bmp',
 ]
-
-OUTPUT_PATH ='C:\\Users\\brolz\\Desktop\\FACULTATE\\LICENTA\\generated'
-
 
 def get_images(image_paths, image_resolution):
     images = []
@@ -68,7 +65,7 @@ def generateSegmentationExternal(image_number, ext_output_path, image_resolution
 
     cpu = torch.device('cpu')
     net = UNet(in_channels=IN_MODALITIES, n_classes=OUTPUT_CLASSES, channels=CHANNELS)
-    network_model_path = 'C:\\Users\\brolz\\Desktop\\FACULTATE\\LICENTA\\COD_LICENTA_SEGMENTARE\\saveroot\\best_model\\0.77\\1.pth'
+    network_model_path = '1.pth'
     net.load_state_dict(torch.load(network_model_path, map_location=cpu))
     net.to(device=cpu)
     return generate_segmentation(image_number = image_number, net=net, device=cpu, image_paths=image_modality_paths, output_path=ext_output_path, image_res=image_resolution)
@@ -79,8 +76,7 @@ if __name__ == '__main__':
 
     # incarcarea modelului
     net = UNet(in_channels=IN_MODALITIES, n_classes=OUTPUT_CLASSES, channels=CHANNELS)
-
-    network_model_path = 'C:\\Users\\brolz\\Desktop\\FACULTATE\\LICENTA\\COD_LICENTA_SEGMENTARE\\saveroot\\best_model\\0.77\\1.pth'
+    network_model_path = 'C:\\Users\\brolz\\Desktop\\FACULTATE\\LICENTA\\COD_LICENTA_SEGMENTARE\\saveroot\\best_model\\1.pth'
 
     net.load_state_dict(torch.load(network_model_path, map_location=cpu))
 
