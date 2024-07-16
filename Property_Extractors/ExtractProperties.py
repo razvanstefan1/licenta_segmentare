@@ -128,7 +128,6 @@ def calculate_diameter_index(cv_image, colors_to_white, patch_size):
     count = 0
 
     patch_radius = patch_size // 2
-    # Iterate over each contour (each vessel segment)
     for contour in contours:
         for point in contour:
             x, y = point[0]
